@@ -163,13 +163,6 @@ export const YearSlider: React.FC<YearSliderProps> = ({ value, onValueChange, di
           ]}
         />
 
-        <View style={styles.labelsContainer} pointerEvents="none">
-          <Text style={styles.label}>{minYear}</Text>
-          <Text style={styles.label}>1950</Text>
-          <Text style={styles.label}>2000</Text>
-          <Text style={styles.label}>{maxYear}</Text>
-        </View>
-
         {/* Transparent overlay to capture all touches consistently */}
         <View
           style={styles.touchOverlay}
@@ -183,18 +176,18 @@ export const YearSlider: React.FC<YearSliderProps> = ({ value, onValueChange, di
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingVertical: 16,
   },
   yearDisplay: {
-    fontSize: 48,
+    fontSize: 40,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: 24,
+    marginBottom: 16,
     fontFamily: 'SpaceGrotesk_700Bold',
   },
   sliderContainer: {
     width: TRACK_WIDTH,
-    height: 60,
+    height: 40,
     position: 'relative',
   },
   track: {
@@ -202,7 +195,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.textMuted,
     borderRadius: 2,
     position: 'absolute',
-    top: 20,
+    top: 18,
     width: '100%',
   },
   tick: {
@@ -225,23 +218,12 @@ const styles = StyleSheet.create({
     height: THUMB_HEIGHT,
     backgroundColor: colors.accent,
     borderRadius: 8,
-    top: 6,
+    top: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,
-  },
-  labelsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 32,
-    width: '100%',
-  },
-  label: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontFamily: 'SpaceGrotesk_400Regular',
   },
   touchOverlay: {
     position: 'absolute',

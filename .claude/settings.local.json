@@ -12,7 +12,8 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: When Was This? - Historical photo guessing game\n\n- 185 curated historical photos \\(1901-2024\\)\n- Complete photo metadata with descriptions\n- React Native/Expo app with TikTok-style UI\n- Year slider with haptic feedback\n- Scoring system with streak multipliers\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git branch:*)",
       "Bash(git push:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

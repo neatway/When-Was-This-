@@ -14,6 +14,8 @@ export const useGameState = (photos: Photo[]) => {
     currentStreak: 0,
     bestStreakThisSession: 0,
     photosCompleted: 0,
+    history: [],
+    viewingHistoryIndex: null,
     allTimeHighScore: 0,
     allTimeBestStreak: 0,
     totalPhotosAllTime: 0,
@@ -83,6 +85,27 @@ export const useGameState = (photos: Photo[]) => {
   };
 
   const nextPhoto = () => {
+    // Save current photo to history if it was guessed
+    if (gameState.hasGuessed) {
+      const currentPhoto = getCurrentPhoto();
+      const score = getLastScore();
+
+      if (currentPhoto && score) {
+        const historyEntry = {
+          photo: currentPhoto,
+          userGuess: gameState.currentGuess,
+          pointsEarned: score.totalPoints,
+          multiplier: score.multiplier,
+          streak: gameState.currentStreak,
+        };
+
+        setGameState((prev) => ({
+          ...prev,
+          history: [...prev.history, historyEntry],
+        }));
+      }
+    }
+
     const nextIndex = (gameState.currentPhotoIndex + 1) % gameState.photos.length;
 
     setGameState((prev) => ({
@@ -90,6 +113,33 @@ export const useGameState = (photos: Photo[]) => {
       currentPhotoIndex: nextIndex,
       currentGuess: gameConfig.defaultYear,
       hasGuessed: false,
+      viewingHistoryIndex: null, // Always return to current when moving forward
+    }));
+  };
+
+  const viewPreviousPhoto = () => {
+    if (gameState.history.length === 0) return;
+
+    // If viewing current photo, go to most recent history
+    if (gameState.viewingHistoryIndex === null) {
+      setGameState((prev) => ({
+        ...prev,
+        viewingHistoryIndex: prev.history.length - 1,
+      }));
+    }
+    // Otherwise, go one further back if possible
+    else if (gameState.viewingHistoryIndex > 0) {
+      setGameState((prev) => ({
+        ...prev,
+        viewingHistoryIndex: prev.viewingHistoryIndex! - 1,
+      }));
+    }
+  };
+
+  const returnToCurrent = () => {
+    setGameState((prev) => ({
+      ...prev,
+      viewingHistoryIndex: null,
     }));
   };
 
@@ -136,6 +186,13 @@ export const useGameState = (photos: Photo[]) => {
     );
   };
 
+  const getDisplayPhoto = () => {
+    if (gameState.viewingHistoryIndex !== null) {
+      return gameState.history[gameState.viewingHistoryIndex];
+    }
+    return null;
+  };
+
   return {
     gameState,
     updateGuess,
@@ -143,5 +200,8 @@ export const useGameState = (photos: Photo[]) => {
     nextPhoto,
     getCurrentPhoto,
     getLastScore,
+    viewPreviousPhoto,
+    returnToCurrent,
+    getDisplayPhoto,
   };
 };

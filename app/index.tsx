@@ -31,6 +31,9 @@ export default function GameScreen() {
     nextPhoto,
     getCurrentPhoto,
     getLastScore,
+    viewPreviousPhoto,
+    returnToCurrent,
+    getDisplayPhoto,
   } = useGameState(photos);
 
   const [animatedScore, setAnimatedScore] = useState(0);
@@ -42,6 +45,11 @@ export default function GameScreen() {
 
   const currentPhoto = getCurrentPhoto();
   const lastScore = getLastScore();
+  const historyPhoto = getDisplayPhoto();
+  const isViewingHistory = gameState.viewingHistoryIndex !== null;
+
+  // Use history photo if viewing history, otherwise current photo
+  const displayPhoto = historyPhoto?.photo || currentPhoto;
 
   // Animate score count-up
   React.useEffect(() => {
@@ -75,35 +83,143 @@ export default function GameScreen() {
   };
 
   const handleSwipeUp = () => {
+    // If viewing history, return to current with animation
+    if (isViewingHistory) {
+      // Animate current photo sliding up
+      Animated.parallel([
+        Animated.timing(photoTranslateY, {
+          toValue: -screenHeight,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(photoOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // Return to current photo
+        returnToCurrent();
+
+        // Start next photo from below and slide up
+        photoTranslateY.setValue(screenHeight);
+        photoOpacity.setValue(0);
+
+        Animated.parallel([
+          Animated.spring(photoTranslateY, {
+            toValue: 0,
+            useNativeDriver: true,
+            damping: 28,
+            stiffness: 85,
+          }),
+          Animated.timing(photoOpacity, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start();
+
+        // Set reveal based on guess state
+        if (gameState.hasGuessed) {
+          revealOpacity.setValue(1);
+        } else {
+          revealOpacity.setValue(0);
+        }
+      });
+      return;
+    }
+
     if (!gameState.hasGuessed) return;
 
     // Slide current photo up and fade out
     Animated.parallel([
       Animated.timing(photoTranslateY, {
         toValue: -screenHeight,
-        duration: 300,
+        duration: 250,
         useNativeDriver: true,
       }),
       Animated.timing(photoOpacity, {
         toValue: 0,
-        duration: 300,
+        duration: 200,
         useNativeDriver: true,
       }),
     ]).start(() => {
       // Move to next photo
       nextPhoto();
 
-      // Reset animations
-      photoTranslateY.setValue(0);
-      photoOpacity.setValue(1);
+      // Start next photo from below and slide up with spring
+      photoTranslateY.setValue(screenHeight);
+      photoOpacity.setValue(0);
+
+      Animated.parallel([
+        Animated.spring(photoTranslateY, {
+          toValue: 0,
+          useNativeDriver: true,
+          damping: 28,
+          stiffness: 85,
+        }),
+        Animated.timing(photoOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
       revealOpacity.setValue(0);
+    });
+  };
+
+  const handleSwipeDown = () => {
+    if (gameState.history.length === 0) return;
+
+    // Animate current photo sliding down
+    Animated.parallel([
+      Animated.timing(photoTranslateY, {
+        toValue: screenHeight,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(photoOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Go to previous photo
+      viewPreviousPhoto();
+
+      // Start previous photo from above and slide down with spring
+      photoTranslateY.setValue(-screenHeight);
+      photoOpacity.setValue(0);
+
+      Animated.parallel([
+        Animated.spring(photoTranslateY, {
+          toValue: 0,
+          useNativeDriver: true,
+          damping: 28,
+          stiffness: 85,
+        }),
+        Animated.timing(photoOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // Always show reveal for history
+      revealOpacity.setValue(1);
     });
   };
 
   const swipeGesture = Gesture.Pan()
     .onEnd((event) => {
-      if (event.velocityY < -500 && gameState.hasGuessed) {
+      // Swipe up - next photo or return to current
+      if (event.velocityY < -300 && (gameState.hasGuessed || isViewingHistory)) {
         handleSwipeUp();
+      }
+      // Swipe down - view previous photo
+      else if (event.velocityY > 300 && gameState.history.length > 0) {
+        handleSwipeDown();
       }
     });
 
@@ -115,7 +231,7 @@ export default function GameScreen() {
     );
   }
 
-  if (error || !currentPhoto) {
+  if (error || !displayPhoto) {
     return (
       <View style={styles.centered}>
         <Text style={styles.errorText}>Failed to load photos</Text>
@@ -132,52 +248,60 @@ export default function GameScreen() {
         score={Math.round(animatedScore)}
       />
 
-      <Animated.View
-        style={[
-          styles.contentContainer,
-          {
-            transform: [{ translateY: photoTranslateY }],
-            opacity: photoOpacity,
-          },
-        ]}
-      >
+      <View style={styles.contentContainer}>
         <GestureDetector gesture={swipeGesture}>
-          <View>
-            <PhotoCard imageUri={getImageUri(currentPhoto.filename)} />
+          <Animated.View
+            style={{
+              transform: [{ translateY: photoTranslateY }],
+              opacity: photoOpacity,
+            }}
+          >
+            <PhotoCard imageUri={getImageUri(displayPhoto.filename)} />
 
             <Animated.View
               style={{
                 opacity: revealOpacity,
                 maxHeight: revealOpacity.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0, 500],
+                  outputRange: [0, 350],
                 }),
                 overflow: 'hidden',
               }}
             >
-              {lastScore && (
+              {isViewingHistory && historyPhoto ? (
                 <RevealOverlay
-                  correctYear={currentPhoto.year}
-                  userGuess={gameState.currentGuess}
-                  pointsEarned={lastScore.totalPoints}
-                  multiplier={lastScore.multiplier}
-                  streak={gameState.currentStreak}
-                  description={currentPhoto.description}
+                  correctYear={historyPhoto.photo.year}
+                  userGuess={historyPhoto.userGuess}
+                  pointsEarned={historyPhoto.pointsEarned}
+                  multiplier={historyPhoto.multiplier}
+                  streak={historyPhoto.streak}
+                  description={historyPhoto.photo.description}
                 />
+              ) : (
+                lastScore && (
+                  <RevealOverlay
+                    correctYear={displayPhoto.year}
+                    userGuess={gameState.currentGuess}
+                    pointsEarned={lastScore.totalPoints}
+                    multiplier={lastScore.multiplier}
+                    streak={gameState.currentStreak}
+                    description={displayPhoto.description}
+                  />
+                )
               )}
             </Animated.View>
-          </View>
+          </Animated.View>
         </GestureDetector>
 
-        <View pointerEvents={gameState.hasGuessed ? 'none' : 'auto'}>
+        <View pointerEvents={gameState.hasGuessed || isViewingHistory ? 'none' : 'auto'}>
           <YearSlider
-            value={gameState.currentGuess}
+            value={isViewingHistory ? historyPhoto!.userGuess : gameState.currentGuess}
             onValueChange={updateGuess}
-            disabled={gameState.hasGuessed}
+            disabled={gameState.hasGuessed || isViewingHistory}
           />
-          <LockInButton onPress={handleLockIn} />
+          {!gameState.hasGuessed && !isViewingHistory && <LockInButton onPress={handleLockIn} />}
         </View>
-      </Animated.View>
+      </View>
 
       {/* TODO: AD PLACEMENT - show ad every 7 photos */}
     </SafeAreaView>

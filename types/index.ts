@@ -5,6 +5,14 @@ export interface Photo {
   description: string;
 }
 
+export interface PhotoHistory {
+  photo: Photo;
+  userGuess: number;
+  pointsEarned: number;
+  multiplier: number;
+  streak: number;
+}
+
 export interface GameState {
   // Current session
   currentPhotoIndex: number;
@@ -15,6 +23,10 @@ export interface GameState {
   currentStreak: number;
   bestStreakThisSession: number;
   photosCompleted: number;
+
+  // History
+  history: PhotoHistory[];
+  viewingHistoryIndex: number | null; // null = current photo, number = index in history
 
   // Persisted (AsyncStorage)
   allTimeHighScore: number;
