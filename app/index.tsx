@@ -16,6 +16,7 @@ import { YearSlider } from '../components/YearSlider';
 import { LockInButton } from '../components/LockInButton';
 import { ScoreDisplay } from '../components/ScoreDisplay';
 import { RevealOverlay } from '../components/RevealOverlay';
+import { LegalInfo } from '../components/LegalInfo';
 import { usePhotos } from '../hooks/usePhotos';
 import { useGameState } from '../hooks/useGameState';
 import { gameConfig } from '../constants/config';
@@ -119,12 +120,12 @@ export default function GameScreen() {
           }),
         ]).start();
 
-        // Set reveal based on guess state
-        if (gameState.hasGuessed) {
-          revealOpacity.setValue(1);
-        } else {
-          revealOpacity.setValue(0);
-        }
+        // Animate reveal based on guess state
+        Animated.timing(revealOpacity, {
+          toValue: gameState.hasGuessed ? 1 : 0,
+          duration: 300,
+          useNativeDriver: false,
+        }).start();
       });
       return;
     }
@@ -165,7 +166,12 @@ export default function GameScreen() {
         }),
       ]).start();
 
-      revealOpacity.setValue(0);
+      // Animate reveal out for new photo
+      Animated.timing(revealOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
     });
   };
 
@@ -206,8 +212,12 @@ export default function GameScreen() {
         }),
       ]).start();
 
-      // Always show reveal for history
-      revealOpacity.setValue(1);
+      // Animate reveal in for history
+      Animated.timing(revealOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
     });
   };
 
@@ -303,7 +313,7 @@ export default function GameScreen() {
         </View>
       </View>
 
-      {/* TODO: AD PLACEMENT - show ad every 7 photos */}
+      <LegalInfo />
     </SafeAreaView>
   );
 }

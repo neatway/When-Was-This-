@@ -13,7 +13,11 @@
       "Bash(git branch:*)",
       "Bash(git push:*)",
       "Bash(git config:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(gh repo edit:*)",
+      "Bash(npm install:*)",
+      "Bash(move appicon.png assetsicon.png)",
+      "Bash(npm start)"
     ]
   }
 }

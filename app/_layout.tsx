@@ -4,6 +4,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { useFonts, SpaceGrotesk_400Regular, SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { colors } from '../constants/colors';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -21,13 +22,15 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.background },
-        }}
-      />
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        />
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

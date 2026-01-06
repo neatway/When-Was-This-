@@ -24,6 +24,44 @@ export const YearSlider: React.FC<YearSliderProps> = ({ value, onValueChange, di
   const lastTenYear = useRef(Math.floor(value / 10) * 10);
   const thumbScale = useRef(new Animated.Value(1)).current;
   const yearScale = useRef(new Animated.Value(1)).current;
+  const animatedYear = useRef(new Animated.Value(value)).current;
+  const [displayYear, setDisplayYear] = useState(value);
+
+  // Animate year when value changes (during photo transitions)
+  React.useEffect(() => {
+    if (isDragging) {
+      // When dragging, set immediately without animation
+      animatedYear.setValue(value);
+      setDisplayYear(value);
+    } else {
+      // When not dragging (photo transitions), animate smoothly
+      Animated.spring(animatedYear, {
+        toValue: value,
+        useNativeDriver: true, // Use native driver for smooth performance
+        damping: 28,
+        stiffness: 85,
+      }).start();
+
+      // Animate display year text separately using JavaScript
+      const startYear = displayYear;
+      const duration = 500;
+      const steps = 30;
+      const increment = (value - startYear) / steps;
+      let currentStep = 0;
+
+      const interval = setInterval(() => {
+        currentStep++;
+        if (currentStep >= steps) {
+          setDisplayYear(value);
+          clearInterval(interval);
+        } else {
+          setDisplayYear(Math.round(startYear + increment * currentStep));
+        }
+      }, duration / steps);
+
+      return () => clearInterval(interval);
+    }
+  }, [value, isDragging]);
 
   const yearToPosition = (year: number): number => {
     const normalizedYear = Math.max(minYear, Math.min(maxYear, year));
@@ -134,7 +172,11 @@ export const YearSlider: React.FC<YearSliderProps> = ({ value, onValueChange, di
     return ticks;
   };
 
-  const thumbPosition = yearToPosition(value);
+  const animatedThumbPosition = animatedYear.interpolate({
+    inputRange: [minYear, maxYear],
+    outputRange: [0, TRACK_WIDTH],
+    extrapolate: 'clamp',
+  });
 
   return (
     <View style={styles.container}>
@@ -144,7 +186,7 @@ export const YearSlider: React.FC<YearSliderProps> = ({ value, onValueChange, di
           { transform: [{ scale: yearScale }] },
         ]}
       >
-        {value}
+        {displayYear}
       </Animated.Text>
 
       <View style={styles.sliderContainer}>
@@ -157,8 +199,15 @@ export const YearSlider: React.FC<YearSliderProps> = ({ value, onValueChange, di
           style={[
             styles.thumb,
             {
-              left: thumbPosition - THUMB_WIDTH / 2,
-              transform: [{ scale: thumbScale }],
+              transform: [
+                {
+                  translateX: animatedThumbPosition.interpolate({
+                    inputRange: [0, TRACK_WIDTH],
+                    outputRange: [-THUMB_WIDTH / 2, TRACK_WIDTH - THUMB_WIDTH / 2],
+                  }),
+                },
+                { scale: thumbScale },
+              ],
             },
           ]}
         />
